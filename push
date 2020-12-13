@@ -1,0 +1,64 @@
+#!/usr/bin/python3
+
+import subprocess
+import discord
+import version
+import config
+
+# Check version
+ver = version.get_public_version()
+print('This is version %s\n' % ver)
+answer = input('Is that correct? (y/n/yes/no, default=no) ')
+if answer == 'y' or answer == 'yes':
+    print('OK!\n')
+else:
+    print('\nAborted')
+    exit()
+
+# Check changelog
+print('Pushing a new public build! Exciting!\n')
+print('Here is the current changelog:\n\n%s\n' % version.get_changelog())
+answer = input('Does the changelog look okay? (y/n/yes/no, default=no) ')
+if answer == 'y' or answer == 'yes':
+    print('OK!\n')
+else:
+    print('\nGet writing!')
+    exit()
+
+# Push to itch.io
+
+builds = {
+    "linux-64": "linux64",
+    "windows-64": "win64",
+    "macos": "macos/gravity-macos.app.zip"
+}
+
+for destination, folder in builds.items():
+    print("[itch] Pushing %s..." % destination)
+    command = [config.BUTLER, 'push', '--fix-permissions', "%s/%s" % (config.BUILDDIR, folder), "%s:%s" % (config.ITCH_PROJECT, destination)]
+    command.extend(['--userversion', str(version.get_version())])
+    subprocess.check_output(command)
+
+
+# Push to Steam
+username = None
+password = None
+with open(config.BUILDDIR + "/.steam", "r") as f:
+    username = f.readline().rstrip()
+    password = f.readline().rstrip()
+print("[steam] Pushing builds...")
+command = [config.STEAM_COMMAND, '+login', username, password, "+run_app_build", config.STEAM_APP_CONFIG, "+quit"]
+output = subprocess.check_output(command)
+print(output.decode('utf-8'))
+
+# Post changelog to discord
+# Check version
+print('Uploading is done!')
+answer = input('Post changelog to Discord? (y/n/yes/no, default=no) ')
+if answer == 'y' or answer == 'yes':
+    print('OK!\n')
+    discord.post_changelog()
+else:
+    print('Skipping Discord post\n')
+
+print('\nAll done!')

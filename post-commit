@@ -1,0 +1,25 @@
+#!/usr/bin/python3
+
+import version
+import discord
+import sys
+
+# Get latest commit and commit message
+commit = version.get_latest_commit()
+(title, message) = version.get_latest_commit_message()
+
+# Get branch
+branch = version.get_branch()
+if branch != 'master':
+    title = "[%s] %s" % (branch, title)
+
+# Create discord title
+title_with_commit = '%s (%s)' % (title, commit)
+
+# Quit if #private
+if title_with_commit.lower().find("#private") >= 0:
+    sys.exit()
+
+# Post to discord
+discord.post_commit_message(title_with_commit, message)
+print("Posted commit %s to #git" % (commit))

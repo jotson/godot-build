@@ -1,0 +1,5 @@
+#!/usr/bin/python3
+
+import version
+
+print(version.get_commits_since_last_tag())

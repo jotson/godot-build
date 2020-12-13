@@ -1,0 +1,48 @@
+#!/usr/bin/python3
+
+import version
+import subprocess
+import os
+import config
+
+# Update version.cfg with current commit
+branch = version.get_branch()
+print('On branch %s' % branch)
+if branch != 'master':
+    print('*** NOT ON MASTER!')
+    exit()
+
+commit = version.get_latest_commit()
+print('Updating build commit in version.cfg to %s' % commit)
+version.set_commit(commit)
+
+# Increment version.cfg version number and tag git
+old_version = version.get_version()
+print('Incrementing to version number %s and tagging git' % str(old_version + 1))
+version.increment_version()
+new_version = version.get_version()
+print('Updating version number from %d to %d' % (old_version, new_version))
+print('Tagging git commit %s with v%s' % (version.get_commit(), version.get_public_version()))
+version.tag_git()
+
+# Generate changelog since last build
+version.generate_changelog()
+
+builds = {
+    "Linux/X11": "linux64/gravity.x86_64",
+    "Windows Desktop 64 bit": "win64/gravity-win64.exe",
+    #"Windows Desktop 32 bit": "win32/gravity-win32.exe",
+    "MacOS": "macos/gravity-macos.app",
+    #"HTML5": "html5/index.html"
+}
+
+for platform, file in builds.items():
+    print("Building %s..." % platform)
+    command = [config.GODOT, '--path', config.PROJECT, config.EXPORT, platform, "%s/%s" % (config.BUILDDIR, file)]
+    command.extend(config.OPTIONS)
+    subprocess.check_output(command)
+
+    if platform == "MacOS":
+        os.rename("%s/%s" % (config.BUILDDIR, file), "%s/%s.zip" % (config.BUILDDIR, file))
+
+print('\nAll done!')
